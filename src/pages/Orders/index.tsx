@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Image } from 'react-native';
 
 import api from '../../services/api';
@@ -18,12 +18,12 @@ import {
   FoodPricing,
 } from './styles';
 
-interface Food {
+export interface Food {
   id: number;
   name: string;
   description: string;
   price: number;
-  formattedValue: number;
+  formattedPrice: number;
   thumbnail_url: string;
 }
 
@@ -32,7 +32,9 @@ const Orders: React.FC = () => {
 
   useEffect(() => {
     async function loadOrders(): Promise<void> {
-      // Load orders from API
+      const response = await api.get('orders');
+
+      setOrders(response.data);
     }
 
     loadOrders();

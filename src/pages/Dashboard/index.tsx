@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Image, ScrollView } from 'react-native';
 
 import Icon from 'react-native-vector-icons/Feather';
@@ -46,20 +46,25 @@ interface Category {
 const Dashboard: React.FC = () => {
   const [foods, setFoods] = useState<Food[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<
-    number | undefined
-  >();
+  const [selectedCategory, setSelectedCategory] = useState<number>();
   const [searchValue, setSearchValue] = useState('');
 
   const navigation = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
-    // Navigate do ProductDetails page
+    navigation.navigate('FoodDetails', { id });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      // Load Foods from API
+      const response = await api.get('foods', {
+        params: {
+          category_like: selectedCategory,
+          name_like: searchValue.length ? searchValue : undefined,
+        },
+      });
+
+      setFoods(response.data);
     }
 
     loadFoods();
@@ -67,15 +72,34 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
-      // Load categories from API
+      const response = await api.get('categories');
+
+      setCategories(response.data);
     }
 
     loadCategories();
   }, []);
 
-  function handleSelectCategory(id: number): void {
-    // Select / deselect category
-  }
+  const handleSelectCategory = useCallback(
+    (id: number) => {
+      if (selectedCategory === id) {
+        setSelectedCategory(undefined);
+        return;
+      }
+
+      setSelectedCategory(id);
+    },
+    [selectedCategory],
+  );
+
+  const foodsFormatted = useMemo(() => {
+    return foods.map(food => {
+      return {
+        ...food,
+        formattedPrice: formatValue(Number(food.price)),
+      };
+    });
+  }, [foods]);
 
   return (
     <Container>
@@ -125,7 +149,7 @@ const Dashboard: React.FC = () => {
         <FoodsContainer>
           <Title>Pratos</Title>
           <FoodList>
-            {foods.map(food => (
+            {foodsFormatted.map(food => (
               <Food
                 key={food.id}
                 onPress={() => handleNavigate(food.id)}
